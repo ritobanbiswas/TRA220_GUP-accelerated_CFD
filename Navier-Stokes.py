@@ -114,6 +114,10 @@ def cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu):
         v[:, 0]  = 0
         v[:, -1] = 0
         
+        if (n+1) % 10 == 0:
+            resSum = numpy.sum((numpy.abs(u)-numpy.abs(un)) + (numpy.abs(v)-numpy.abs(vn)))
+            if resSum < 1e-1:
+                break
         
     return u, v, p
 
