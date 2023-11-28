@@ -10,7 +10,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib as mpl
-
+import cProfile, pstats
 
 #================= Functions ==================
 
@@ -210,6 +210,8 @@ Ds[1:nI-1,1:nJ-1] = dx_CV[1:nI-1,1:nJ-1]*mu/dys_N[1:nI-1,1:nJ-1]
 U[:,nJ-1] = UWall
 # Looping
 
+pr=cProfile.Profile()
+pr.enable()
 for iter in range(nIterations):
     # Compute Sp
     Sp = Fw - Fe + Fs - Fn
@@ -311,6 +313,8 @@ for iter in range(nIterations):
     if resTolerance>max([residuals_U[-1], residuals_V[-1], residuals_c[-1]]):
         break
 
+pr.disable()
+pstats.Stats(pr).sort_stats('tottime').print_stats(10)
 
 # ============== Plotting =================
 
