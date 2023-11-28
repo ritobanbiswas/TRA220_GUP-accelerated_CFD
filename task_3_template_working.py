@@ -8,7 +8,7 @@
 
 #==============Packages needed=================
 import matplotlib.pyplot as plt
-import numpy as np
+import cupy as np
 import matplotlib as mpl
 
 
@@ -19,35 +19,23 @@ def rhieChow(U,V,P,dx_CV,dy_CV,fxe,fxw,fyn,fys,coeffsUV,nI,nJ):
     aPw = np.zeros((nI,nJ))
     aPn = np.zeros((nI,nJ))
     aPs = np.zeros((nI,nJ))
-    
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
 
-            aPe[i,j] = ((fxe[i,j] * coeffsUV[i+1,j,4]) + (1 - fxe[i,j])*coeffsUV[i,j,4])
-            aPw[i,j] = ((fxw[i,j] * coeffsUV[i-1,j,4]) + (1 - fxw[i,j])*coeffsUV[i,j,4])
-            aPn[i,j] = ((fyn[i,j] * coeffsUV[i,j+1,4]) + (1 - fyn[i,j])*coeffsUV[i,j,4])
-            aPs[i,j] = ((fys[i,j] * coeffsUV[i,j-1,4]) + (1 - fys[i,j])*coeffsUV[i,j,4])
+    aPe[1:nI-1,1:nJ-1] = ((fxe[1:nI-1,1:nJ-1] * coeffsUV[2:nI,1:nJ-1,4]) + (1 - fxe[1:nI-1,1:nJ-1])*coeffsUV[1:nI-1,1:nJ-1,4])
+    aPw[1:nI-1,1:nJ-1] = ((fxw[1:nI-1,1:nJ-1] * coeffsUV[0:nI-2,1:nJ-1,4]) + (1 - fxw[1:nI-1,1:nJ-1])*coeffsUV[1:nI-1,1:nJ-1,4])
+    aPn[1:nI-1,1:nJ-1] = ((fyn[1:nI-1,1:nJ-1] * coeffsUV[1:nI-1,2:nJ,4]) + (1 - fyn[1:nI-1,1:nJ-1])*coeffsUV[1:nI-1,1:nJ-1,4])
+    aPs[1:nI-1,1:nJ-1] = ((fys[1:nI-1,1:nJ-1] * coeffsUV[1:nI-1,0:nJ-2,4]) + (1 - fys[1:nI-1,1:nJ-1])*coeffsUV[1:nI-1,1:nJ-1,4])
     
-            
-            if i != nI-2:
-                Fe[i,j] =  ((fxe[i,j] * U[i+1,j] + (1 - fxe[i,j])*U[i,j]) + dy_CV[i,j]/(4*aPe[i,j])*(P[i+2,j] - 3*P[i+1,j] + 3*P[i,j] - P[i-1,j]))*rho * dy_CV[i,j] # east convective
-            else:
-                Fe[i,j] =  (fxe[i,j] * U[i+1,j] + (1 - fxe[i,j])*U[i,j]) * rho * dy_CV[i,j]
-                
-            if i != 1:
-                Fw[i,j] =  ((fxw[i,j] * U[i-1,j] + (1 - fxw[i,j])*U[i,j]) + dy_CV[i,j]/(4*aPw[i,j])*(P[i+1,j] - 3*P[i,j] + 3*P[i-1,j] - P[i-2,j]))*rho * dy_CV[i,j] # west convective
-            else:
-                Fw[i,j] =  (fxw[i,j] * U[i-1,j] + (1 - fxw[i,j])*U[i,j]) * rho * dy_CV[i,j]  
-                
-            if j != nJ-2:
-                Fn[i,j] =  ((fyn[i,j] * V[i,j+1] + (1 - fyn[i,j])*V[i,j]) + dx_CV[i,j]/(4*aPn[i,j])*(P[i,j+2] - 3*P[i,j+1] + 3*P[i,j] - P[i,j-1]))*rho * dx_CV[i,j] # north convective
-            else:
-                Fn[i,j] =  (fyn[i,j] * V[i,j+1] + (1 - fyn[i,j])*V[i,j]) * rho * dx_CV[i,j] 
-                
-            if j != 1:
-                Fs[i,j] =  ((fys[i,j] * V[i,j-1] + (1 - fys[i,j])*V[i,j]) + dx_CV[i,j]/(4*aPs[i,j])*(P[i,j+1] - 3*P[i,j] + 3*P[i,j-1] - P[i,j-2]))*rho * dx_CV[i,j] # south convective
-            else:
-                Fs[i,j] =  (fys[i,j] * V[i,j-1] + (1 - fys[i,j])*V[i,j]) * rho * dx_CV[i,j]
+    Fe[1:nI-2,1:nJ-1] =  ((fxe[1:nI-2,1:nJ-1] * U[2:nI-1,1:nJ-1] + (1 - fxe[1:nI-2,1:nJ-1])*U[1:nI-2,1:nJ-1]) + dy_CV[1:nI-2,1:nJ-1]/(4*aPe[1:nI-2,1:nJ-1])*(P[3:nI,1:nJ-1] - 3*P[2:nI-1,1:nJ-1] + 3*P[1:nI-2,1:nJ-1] - P[0:nI-3,1:nJ-1]))*rho * dy_CV[1:nI-2,1:nJ-1] # east convective
+    Fe[nI-2,1:nJ-1] =  (fxe[nI-2,1:nJ-1] * U[nI-1,1:nJ-1] + (1 - fxe[nI-2,1:nJ-1])*U[nI-2,1:nJ-1]) * rho * dy_CV[nI-2,1:nJ-1]
+
+    Fw[2:nI-1,1:nJ-1] =  ((fxw[2:nI-1,1:nJ-1] * U[1:nI-2,1:nJ-1] + (1 - fxw[2:nI-1,1:nJ-1])*U[2:nI-1,1:nJ-1]) + dy_CV[2:nI-1,1:nJ-1]/(4*aPw[2:nI-1,1:nJ-1])*(P[3:nI,1:nJ-1] - 3*P[2:nI-1,1:nJ-1] + 3*P[1:nI-2,1:nJ-1] - P[0:nI-3,1:nJ-1]))*rho * dy_CV[2:nI-1,1:nJ-1] # west convective
+    Fw[1,1:nJ-1] =  (fxw[1,1:nJ-1] * U[0,1:nJ-1] + (1 - fxw[1,1:nJ-1])*U[1,1:nJ-1]) * rho * dy_CV[1,1:nJ-1]  
+
+    Fn[1:nI-1,1:nJ-2] =  ((fyn[1:nI-1,1:nJ-2] * V[1:nI-1,2:nJ-1] + (1 - fyn[1:nI-1,1:nJ-2])*V[1:nI-1,1:nJ-2]) + dx_CV[1:nI-1,1:nJ-2]/(4*aPn[1:nI-1,1:nJ-2])*(P[1:nI-1,3:nJ] - 3*P[1:nI-1,2:nJ-1] + 3*P[1:nI-1,1:nJ-2] - P[1:nI-1,0:nJ-3]))*rho * dx_CV[1:nI-1,1:nJ-2] # north convective
+    Fn[1:nI-1,nJ-2] =  (fyn[1:nI-1,nJ-2] * V[1:nI-1,nJ-1] + (1 - fyn[1:nI-1,nJ-2])*V[1:nI-1,nJ-2]) * rho * dx_CV[1:nI-1,nJ-2] 
+
+    Fs[1:nI-1,2:nJ-1] =  ((fys[1:nI-1,2:nJ-1] * V[1:nI-1,1:nJ-2] + (1 - fys[1:nI-1,2:nJ-1])*V[1:nI-1,2:nJ-1]) + dx_CV[1:nI-1,2:nJ-1]/(4*aPs[1:nI-1,2:nJ-1])*(P[1:nI-1,3:nJ] - 3*P[1:nI-1,2:nJ-1] + 3*P[1:nI-1,1:nJ-2] - P[1:nI-1,0:nJ-3]))*rho * dx_CV[1:nI-1,2:nJ-1] # south convective
+    Fs[1:nI-1,1] =  (fys[1:nI-1,1] * V[1:nI-1,0] + (1 - fys[1:nI-1,1])*V[1:nI-1,1]) * rho * dx_CV[1:nI-1,1]
                 
     return [Fe,Fw,Fn,Fs]
     
@@ -64,21 +52,21 @@ data_file = open ('data_FOU_CD.txt')# data file where the given solution is stor
 
 # Geometric inputs (fixed so that a fair comparison can be made)
 
-mI = 11 # number of mesh points X direction. 
-mJ = 11 # number of mesh points Y direction. 
+mI = 101 # number of mesh points X direction. 
+mJ = 101 # number of mesh points Y direction. 
 xL =  1 # length in X direction
 yL =  1 # length in Y direction
 
 # Solver inputs
 
 nIterations           = 5000 # maximum number of iterations
-n_inner_iterations_gs_mom = 1 # amount of inner iterations when solving 
-n_inner_iterations_gs_p = 13
+n_inner_iterations_gs_mom = 10 # amount of inner iterations when solving 
+n_inner_iterations_gs_p = 20
                               # pressure correction with Gauss-Seidel
-resTolerance = 1e-7 # convergence criteria for residuals
+resTolerance = 2e-5 # convergence criteria for residuals
                      # each variable
-alphaUV = 0.5     # under relaxation factor for U and V
-alphaP  = 0.5       # under relaxation factor for P
+alphaUV = 0.1     # under relaxation factor for U and V
+alphaP  = 0.1       # under relaxation factor for P
 #alphaUV = 0.36
 #alphaP = 0.54
 # ================ Code =======================
@@ -116,8 +104,8 @@ residuals  = np.zeros((3,1))     # U, V and conitnuity residuals
 # Allocate all variables matrices
 xCoords_N = np.zeros((nI,nJ)) # X coords of the nodes
 yCoords_N = np.zeros((nI,nJ)) # Y coords of the nodes
-xCoords_M = np.zeros((mI,mJ)) # X coords of the mesh points
-yCoords_M = np.zeros((mI,mJ)) # Y coords of the mesh points
+#xCoords_M = np.zeros((mI,mJ)) # X coords of the mesh points
+#yCoords_M = np.zeros((mI,mJ)) # Y coords of the mesh points
 dxe_N     = np.zeros((nI,nJ)) # X distance to east node
 dxw_N     = np.zeros((nI,nJ)) # X distance to west node
 dyn_N     = np.zeros((nI,nJ)) # Y distance to north node
@@ -159,11 +147,17 @@ dx = xL/(mI - 1)
 dy = yL/(mJ - 1)
 
 # Fill the coordinates
+xTemp = np.arange(0,mI)*dx
+yTemp = np.arange(0,mJ)*dy
+
+xCoords_M, yCoords_M = np.meshgrid(xTemp,yTemp,indexing='ij')
+
+# Fill the coordinates
 for i in range(mI):
     for j in range(mJ):
         # For the mesh points
-        xCoords_M[i,j] = i*dx
-        yCoords_M[i,j] = j*dy
+        #xCoords_M[i,j] = i*dx
+        #yCoords_M[i,j] = j*dy
 
         # For the nodes
         if i > 0:
@@ -233,11 +227,16 @@ for iter in range(nIterations):
         
     ## Solve for U and V using Gauss-Seidel   
     for gaussUViter in range(0,n_inner_iterations_gs_mom):
-        for i in range(1,nI-1):
-            for j in range(1,nJ-1):
-                U[i,j] = 1/coeffsUV[i,j,4]*(coeffsUV[i,j,0]*U[i+1,j] + coeffsUV[i,j,1]*U[i-1,j] + coeffsUV[i,j,2]*U[i,j+1] + coeffsUV[i,j,3]*U[i,j-1] + sourceUV[i,j,0])
-                V[i,j] = 1/coeffsUV[i,j,4]*(coeffsUV[i,j,0]*V[i+1,j] + coeffsUV[i,j,1]*V[i-1,j] + coeffsUV[i,j,2]*V[i,j+1] + coeffsUV[i,j,3]*V[i,j-1] + sourceUV[i,j,1])
-            
+
+        # # Gauss-Seidel method
+        # for i in range(1,nI-1):
+        #    for j in range(1,nJ-1):
+        #        U[i,j] = 1/coeffsUV[i,j,4]*(coeffsUV[i,j,0]*U[i+1,j] + coeffsUV[i,j,1]*U[i-1,j] + coeffsUV[i,j,2]*U[i,j+1] + coeffsUV[i,j,3]*U[i,j-1] + sourceUV[i,j,0])
+        #        V[i,j] = 1/coeffsUV[i,j,4]*(coeffsUV[i,j,0]*V[i+1,j] + coeffsUV[i,j,1]*V[i-1,j] + coeffsUV[i,j,2]*V[i,j+1] + coeffsUV[i,j,3]*V[i,j-1] + sourceUV[i,j,1])
+
+        ## Jacobi method
+        U[1:nI-1,1:nJ-1] = 1/coeffsUV[1:nI-1,1:nJ-1,4]*(coeffsUV[1:nI-1,1:nJ-1,0]*U[2:nI,1:nJ-1] + coeffsUV[1:nI-1,1:nJ-1,1]*U[0:nI-2,1:nJ-1] + coeffsUV[1:nI-1,1:nJ-1,2]*U[1:nI-1,2:nJ] + coeffsUV[1:nI-1,1:nJ-1,3]*U[1:nI-1,0:nJ-2] + sourceUV[1:nI-1,1:nJ-1,0])
+        V[1:nI-1,1:nJ-1] = 1/coeffsUV[1:nI-1,1:nJ-1,4]*(coeffsUV[1:nI-1,1:nJ-1,0]*V[2:nI,1:nJ-1] + coeffsUV[1:nI-1,1:nJ-1,1]*V[0:nI-2,1:nJ-1] + coeffsUV[1:nI-1,1:nJ-1,2]*V[1:nI-1,2:nJ] + coeffsUV[1:nI-1,1:nJ-1,3]*V[1:nI-1,0:nJ-2] + sourceUV[1:nI-1,1:nJ-1,1])
            
     ## Calculate at the faces using Rhie-Chow for the face velocities
     [Fe,Fw,Fn,Fs] = rhieChow(U,V,P,dx_CV,dy_CV,fxe,fxw,fyn,fys,coeffsUV,nI,nJ)    
@@ -264,15 +263,19 @@ for iter in range(nIterations):
     # Solve for pressure correction (Note that more that one loop is used)
     Pp[:,:] = 0
     for iter_gs in range(n_inner_iterations_gs_p):
-        for j in range(1,nJ-1):
-            for i in range(1,nI-1):    
-                Pp[i,j] = 1/coeffsPp[i,j,4]*(coeffsPp[i,j,0]*Pp[i+1,j] + coeffsPp[i,j,1]*Pp[i-1,j] + coeffsPp[i,j,2]*Pp[i,j+1] + coeffsPp[i,j,3]*Pp[i,j-1] + sourcePp[i,j])
-                
-        for j in range(nJ-2,0,-1):
-            for i in range(nI-2,0,-1): 
-                Pp[i,j] = 1/coeffsPp[i,j,4]*(coeffsPp[i,j,0]*Pp[i+1,j] + coeffsPp[i,j,1]*Pp[i-1,j] + coeffsPp[i,j,2]*Pp[i,j+1] + coeffsPp[i,j,3]*Pp[i,j-1] + sourcePp[i,j])
 
-        
+        # # Gauss-Seidel method
+        # for j in range(1,nJ-1):
+        #     for i in range(1,nI-1):    
+        #         Pp[i,j] = 1/coeffsPp[i,j,4]*(coeffsPp[i,j,0]*Pp[i+1,j] + coeffsPp[i,j,1]*Pp[i-1,j] + coeffsPp[i,j,2]*Pp[i,j+1] + coeffsPp[i,j,3]*Pp[i,j-1] + sourcePp[i,j])
+                
+        # for j in range(nJ-2,0,-1):
+        #     for i in range(nI-2,0,-1): 
+        #         Pp[i,j] = 1/coeffsPp[i,j,4]*(coeffsPp[i,j,0]*Pp[i+1,j] + coeffsPp[i,j,1]*Pp[i-1,j] + coeffsPp[i,j,2]*Pp[i,j+1] + coeffsPp[i,j,3]*Pp[i,j-1] + sourcePp[i,j])
+
+        # Jacobi method
+        Pp[1:nI-1,1:nJ-1] = 1/coeffsPp[1:nI-1,1:nJ-1,4]*(coeffsPp[1:nI-1,1:nJ-1,0]*Pp[2:nI,1:nJ-1] + coeffsPp[1:nI-1,1:nJ-1,1]*Pp[0:nI-2,1:nJ-1] + coeffsPp[1:nI-1,1:nJ-1,2]*Pp[1:nI-1,2:nJ] + coeffsPp[1:nI-1,1:nJ-1,3]*Pp[1:nI-1,0:nJ-2] + sourcePp[1:nI-1,1:nJ-1])
+
         Pp[nI-1,0:nJ] = Pp[nI-2,0:nJ]
         Pp[0,0:nJ] = Pp[1,0:nJ]
         Pp[0:nI,nJ-1] = Pp[0:nI,nJ-2]
@@ -304,12 +307,16 @@ for iter in range(nIterations):
     residuals_V[-1] = np.linalg.norm(coeffsUV[1:nI-1,1:nJ-1,4]*V[1:nI-1,1:nJ-1] - (coeffsUV[1:nI-1,1:nJ-1,0]*V[2:nI,1:nJ-1] + coeffsUV[1:nI-1,1:nJ-1,1]*V[0:nI-2,1:nJ-1] + coeffsUV[1:nI-1,1:nJ-1,2]*V[1:nI-1,2:nJ] + coeffsUV[1:nI-1,1:nJ-1,3]*V[1:nI-1,0:nJ-2] + sourceUV[1:nI-1,1:nJ-1,1]),1)
     residuals_c[-1] = np.linalg.norm(Fw[1:nI-1,1:nJ-1] - Fe[1:nI-1,1:nJ-1] + Fs[1:nI-1,1:nJ-1] - Fn[1:nI-1,1:nJ-1],1)
 
-    print('iteration: %d\nresU = %.5e, resV = %.5e, resCon = %.5e\n\n'\
-        % (iter, residuals_U[-1], residuals_V[-1], residuals_c[-1]))
+    if (iter) % 20 == 0:
+        print('iteration: %d\nresU = %.5e, resV = %.5e, resCon = %.5e\n\n'\
+            % (iter, residuals_U[-1], residuals_V[-1], residuals_c[-1]))
     
     #  Check convergence
     if resTolerance>max([residuals_U[-1], residuals_V[-1], residuals_c[-1]]):
+        print('iteration: %d\nresU = %.5e, resV = %.5e, resCon = %.5e\n\n'\
+            % (iter, residuals_U[-1], residuals_V[-1], residuals_c[-1]))
         break
+
 
 
 # ============== Plotting =================
@@ -414,6 +421,6 @@ plt.legend()
 plt.title('Residuals')
 plt.yscale('log')
 
-#plt.show()
-plt.close()
+plt.show()
+#plt.close()
 
