@@ -64,14 +64,14 @@ data_file = open ('data_FOU_CD.txt')# data file where the given solution is stor
 
 # Geometric inputs (fixed so that a fair comparison can be made)
 
-mI = 21 # number of mesh points X direction. 
-mJ = 21 # number of mesh points Y direction. 
+mI = 11 # number of mesh points X direction. 
+mJ = 11 # number of mesh points Y direction. 
 xL =  1 # length in X direction
 yL =  1 # length in Y direction
 
 # Solver inputs
 
-nIterations           = 500 # maximum number of iterations
+nIterations           = 5000 # maximum number of iterations
 n_inner_iterations_gs_mom = 1 # amount of inner iterations when solving 
 n_inner_iterations_gs_p = 13
                               # pressure correction with Gauss-Seidel
@@ -149,6 +149,8 @@ UVvec = np.zeros((nI,nJ))
 U_norm = np.zeros((nI,nJ))
 V_norm = np.zeros((nI,nJ))
 
+tempZeroes = np.zeros((nI,nJ))
+
 residuals_U = []
 residuals_V = []
 residuals_c = []
@@ -184,160 +186,81 @@ yCoords_N[:,-1] = yL
 
 
 # Fill dxe, dxw, dyn and dys
-for i in range(1,nI-1):
-    for j in range(1,nJ-1):
-        dxe_N[i,j] = xCoords_N[i+1,j] - xCoords_N[i,j]
-        dxw_N[i,j] = xCoords_N[i,j] - xCoords_N[i-1,j]
-        dyn_N[i,j] = yCoords_N[i,j+1] - yCoords_N[i,j]
-        dys_N[i,j] = yCoords_N[i,j] - yCoords_N[i,j-1]
+dxe_N[1:nI-1,1:nJ-1] = xCoords_N[2:nI,1:nJ-1] - xCoords_N[1:nI-1,1:nJ-1]
+dxw_N[1:nI-1,1:nJ-1] = xCoords_N[1:nI-1,1:nJ-1] - xCoords_N[0:nI-2,1:nJ-1]
+dyn_N[1:nI-1,1:nJ-1] = yCoords_N[1:nI-1,2:nJ] - yCoords_N[1:nI-1,1:nJ-1]
+dys_N[1:nI-1,1:nJ-1] = yCoords_N[1:nI-1,1:nJ-1] - yCoords_N[1:nI-1,0:nJ-2]
 
 # Initialize variable matrices
-
 U[:,:] = 0
 V[:,:] = 0
 P[:,:] = 0
 
 # Compute f and D
-for i in range(1,nI-1):
-    for j in range(1,nJ-1):
-        fxe[i,j] = 0.5*dx_CV[i,j]/dxe_N[i,j]
-        fxw[i,j] = 0.5*dx_CV[i,j]/dxw_N[i,j]
-        fyn[i,j] = 0.5*dy_CV[i,j]/dyn_N[i,j]
-        fys[i,j] = 0.5*dy_CV[i,j]/dys_N[i,j]
-        
-        De[i,j] = dy_CV[i,j]*mu/dxe_N[i,j]
-        Dw[i,j] = dy_CV[i,j]*mu/dxw_N[i,j]
-        Dn[i,j] = dx_CV[i,j]*mu/dyn_N[i,j]
-        Ds[i,j] = dx_CV[i,j]*mu/dys_N[i,j]
-        
-        # Fe[i,j] =  (fxe[i,j] * U[i+1,j] + (1 - fxe[i,j])*U[i,j]) * rho * dy_CV[i,j]
-        # Fw[i,j] =  (fxw[i,j] * U[i-1,j] + (1 - fxw[i,j])*U[i,j]) * rho * dy_CV[i,j] 
-        # Fn[i,j] =  (fyn[i,j] * V[i,j+1] + (1 - fyn[i,j])*V[i,j]) * rho * dx_CV[i,j]
-        # Fs[i,j] =  (fys[i,j] * V[i,j-1] + (1 - fys[i,j])*V[i,j]) * rho * dx_CV[i,j]
+fxe[1:nI-1,1:nJ-1] = 0.5*dx_CV[1:nI-1,1:nJ-1]/dxe_N[1:nI-1,1:nJ-1]
+fxw[1:nI-1,1:nJ-1] = 0.5*dx_CV[1:nI-1,1:nJ-1]/dxw_N[1:nI-1,1:nJ-1]
+fyn[1:nI-1,1:nJ-1] = 0.5*dy_CV[1:nI-1,1:nJ-1]/dyn_N[1:nI-1,1:nJ-1]
+fys[1:nI-1,1:nJ-1] = 0.5*dy_CV[1:nI-1,1:nJ-1]/dys_N[1:nI-1,1:nJ-1]
+
+De[1:nI-1,1:nJ-1] = dy_CV[1:nI-1,1:nJ-1]*mu/dxe_N[1:nI-1,1:nJ-1]
+Dw[1:nI-1,1:nJ-1] = dy_CV[1:nI-1,1:nJ-1]*mu/dxw_N[1:nI-1,1:nJ-1]
+Dn[1:nI-1,1:nJ-1] = dx_CV[1:nI-1,1:nJ-1]*mu/dyn_N[1:nI-1,1:nJ-1]
+Ds[1:nI-1,1:nJ-1] = dx_CV[1:nI-1,1:nJ-1]*mu/dys_N[1:nI-1,1:nJ-1]
         
 U[:,nJ-1] = UWall
 # Looping
 
 for iter in range(nIterations):
-    # Impose boundary conditions for velocities, only the top boundary wall
-    # is moving from left to right with UWall
-    
-    
-    # Impose pressure boundary condition, all homogeneous Neumann
-    
-    # Compute coefficients for U and V equations
-        
-        
-    
-    # ### Compute coefficients at corner nodes (one step inside)
-                
-            
-    
+    # Compute Sp
     Sp = Fw - Fe + Fs - Fn
+
     ## Compute coefficients for inner nodes
-    # E, W, N, S and P
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
-            coeffsUV[i,j,0] = De[i,j] + np.max([0,-Fe[i,j]])
-            coeffsUV[i,j,1] = Dw[i,j] + np.max([0,Fw[i,j]])
-            coeffsUV[i,j,2] = Dn[i,j] + np.max([0,-Fn[i,j]])
-            coeffsUV[i,j,3] = Ds[i,j] + np.max([0,Fs[i,j]])
+    coeffsUV[1:nI-1,1:nJ-1,0] = De[1:nI-1,1:nJ-1] + np.maximum(tempZeroes[1:nI-1,1:nJ-1],-Fe[1:nI-1,1:nJ-1])
+    coeffsUV[1:nI-1,1:nJ-1,1] = Dw[1:nI-1,1:nJ-1] + np.maximum(tempZeroes[1:nI-1,1:nJ-1],Fw[1:nI-1,1:nJ-1])
+    coeffsUV[1:nI-1,1:nJ-1,2] = Dn[1:nI-1,1:nJ-1] + np.maximum(tempZeroes[1:nI-1,1:nJ-1],-Fn[1:nI-1,1:nJ-1])
+    coeffsUV[1:nI-1,1:nJ-1,3] = Ds[1:nI-1,1:nJ-1] + np.maximum(tempZeroes[1:nI-1,1:nJ-1],Fs[1:nI-1,1:nJ-1])
             
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
-            sourceUV[i,j,0] = -0.5*(P[i+1,j] - P[i-1,j])*dy_CV[i,j] + max(Sp[i,j],0)*U[i,j]
-            sourceUV[i,j,1] = -0.5*(P[i,j+1] - P[i,j-1])*dx_CV[i,j] + max(Sp[i,j],0)*V[i,j]
-            Sp[i,j] = -max(-Sp[i,j],0)
-   
-
-    # for i in range(2,nI-2):
-    #     for j in range(2,nJ-2):
-    #         sourceUV[i,j,0] = -0.5*(P[i+1,j] - P[i-1,j])*dy_CV[i,j] + max(Sp[i,j],0)*U[i,j]
-    #         sourceUV[i,j,1] = -0.5*(P[i,j+1] - P[i,j-1])*dx_CV[i,j] + max(Sp[i,j],0)*V[i,j]
-    #         Sp[i,j] = -max(-Sp[i,j],0)
-   
-    # Compute coefficients for nodes one step inside the domain
-    ## First, north and south boundaries
-    # for i in range(1,nI-1):
-    #     j = 1
-    #     sourceUV[i,j,1] = -((P[i,j] + P[i,j+1])/2 - P[i,j-1])*dx_CV[i,j] + max(Sp[i,j],0)*V[i,j]
-    #     Sp[i,j] = -max(-Sp[i,j],0)
-    #     j = nJ-2
-    #     sourceUV[i,j,1] = -(P[i,j+1] - (P[i,j-1] + P[i,j])/2)*dx_CV[i,j] + max(Sp[i,j],0)*V[i,j]
-    #     Sp[i,j] = -max(-Sp[i,j],0)
-
-    # ### Second, east and west boundaries
-    # for j in range(1,nJ-1):
-    #     i = 1
-    #     sourceUV[i,j,0] = -((P[i+1,j] + P[i,j])/2 - P[i-1,j])*dy_CV[i,j] + max(Sp[i,j],0)*U[i,j]
-    #     Sp[i,j] = -max(-Sp[i,j],0)
-    #     i = nI-2
-    #     sourceUV[i,j,0] = -(P[i+1,j] - (P[i-1,j] + P[i,j])/2)*dy_CV[i,j] + max(Sp[i,j],0)*U[i,j]
-    #     Sp[i,j] = -max(-Sp[i,j],0)
+    ## Compute source terms for inner nodes
+    sourceUV[1:nI-1,1:nJ-1,0] = -0.5*(P[2:nI,1:nJ-1] - P[0:nI-2,1:nJ-1])*dy_CV[1:nI-1,1:nJ-1] + np.maximum(Sp[1:nI-1,1:nJ-1],tempZeroes[1:nI-1,1:nJ-1])*U[1:nI-1,1:nJ-1]
+    sourceUV[1:nI-1,1:nJ-1,1] = -0.5*(P[1:nI-1,2:nJ] - P[1:nI-1,0:nJ-2])*dx_CV[1:nI-1,1:nJ-1] + np.maximum(Sp[1:nI-1,1:nJ-1],tempZeroes[1:nI-1,1:nJ-1])*V[1:nI-1,1:nJ-1]
+    Sp[1:nI-1,1:nJ-1] = -np.maximum(-Sp[1:nI-1,1:nJ-1],tempZeroes[1:nI-1,1:nJ-1])
         
-        
-    coeffsUV[:,:,4] = coeffsUV[:,:,0] + coeffsUV[:,:,1] + coeffsUV[:,:,2] + coeffsUV[:,:,3] - Sp[:,:]
-        
-    
-    ## Introduce implicit under-relaxation for U and V
-    coeffsUV[:,:,4] = coeffsUV[:,:,4]/alphaUV
+    ## Compute aP and introduce implicit under-relaxation for U and V
+    coeffsUV[:,:,4] = (coeffsUV[:,:,0] + coeffsUV[:,:,1] + coeffsUV[:,:,2] + coeffsUV[:,:,3] - Sp[:,:])/alphaUV
     sourceUV[:,:,0] += (1-alphaUV)*coeffsUV[:,:,4]*U
     sourceUV[:,:,1] += (1-alphaUV)*coeffsUV[:,:,4]*V
-    
 
         
     ## Solve for U and V using Gauss-Seidel   
-    
     for gaussUViter in range(0,n_inner_iterations_gs_mom):
         for i in range(1,nI-1):
             for j in range(1,nJ-1):
                 U[i,j] = 1/coeffsUV[i,j,4]*(coeffsUV[i,j,0]*U[i+1,j] + coeffsUV[i,j,1]*U[i-1,j] + coeffsUV[i,j,2]*U[i,j+1] + coeffsUV[i,j,3]*U[i,j-1] + sourceUV[i,j,0])
                 V[i,j] = 1/coeffsUV[i,j,4]*(coeffsUV[i,j,0]*V[i+1,j] + coeffsUV[i,j,1]*V[i-1,j] + coeffsUV[i,j,2]*V[i,j+1] + coeffsUV[i,j,3]*V[i,j-1] + sourceUV[i,j,1])
-           
-        # for i in range(nI-2,0,-1):
-        #     for j in range(nJ-2,0,-1):
-        #         U[i,j] = 1/coeffsUV[i,j,4]*(coeffsUV[i,j,0]*U[i+1,j] + coeffsUV[i,j,1]*U[i-1,j] + coeffsUV[i,j,2]*U[i,j+1] + coeffsUV[i,j,3]*U[i,j-1] + sourceUV[i,j,0])
-        #         V[i,j] = 1/coeffsUV[i,j,4]*(coeffsUV[i,j,0]*V[i+1,j] + coeffsUV[i,j,1]*V[i-1,j] + coeffsUV[i,j,2]*V[i,j+1] + coeffsUV[i,j,3]*V[i,j-1] + sourceUV[i,j,1])
             
            
     ## Calculate at the faces using Rhie-Chow for the face velocities
-        
     [Fe,Fw,Fn,Fs] = rhieChow(U,V,P,dx_CV,dy_CV,fxe,fxw,fyn,fys,coeffsUV,nI,nJ)    
     
-    ## Calculate pressure correction equation coefficients
-    
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
-        
-        # hint: set homogeneous Neumann coefficients with if  
-            if i == nI-2:
-                coeffsPp[i,j,0] = 0
-            else:
-                coeffsPp[i,j,0] = dy_CV[i,j]**2*rho/(fxe[i,j] * coeffsUV[i+1,j,4] + (1 - fxe[i,j])*coeffsUV[i,j,4])
-                
-            if i == 1:
-                coeffsPp[i,j,1] = 0
-            else:
-                coeffsPp[i,j,1] = dy_CV[i,j]**2*rho/(fxw[i,j] * coeffsUV[i-1,j,4] + (1 - fxw[i,j])*coeffsUV[i,j,4])
-                
-            if j == nJ-2:
-                coeffsPp[i,j,2] = 0
-            else:
-                coeffsPp[i,j,2] = dx_CV[i,j]**2*rho/(fyn[i,j] * coeffsUV[i,j+1,4] + (1 - fyn[i,j])*coeffsUV[i,j,4])
-                
-            if j == 1:
-                coeffsPp[i,j,3] = 0
-            else:
-                coeffsPp[i,j,3] = dx_CV[i,j]**2*rho/(fys[i,j] * coeffsUV[i,j-1,4] + (1 - fys[i,j])*coeffsUV[i,j,4])
 
-            # coeffsPp[i,j,4] = coeffsPp[i,j,0] + coeffsPp[i,j,1] + coeffsPp[i,j,2] + coeffsPp[i,j,3]
-            
-            # sourcePp[i,j]  =  ;
+    ## Calculate pressure correction equation coefficients
+    coeffsPp[1:nI-2,1:nJ-1,0] = dy_CV[1:nI-2,1:nJ-1]**2*rho/(fxe[1:nI-2,1:nJ-1] * coeffsUV[2:nI-1,1:nJ-1,4] + (1 - fxe[1:nI-2,1:nJ-1])*coeffsUV[1:nI-2,1:nJ-1,4])
+    coeffsPp[nI-2,1:nJ-1,0] = 0
+
+    coeffsPp[2:nI-1,1:nJ-1,1] = dy_CV[2:nI-1,1:nJ-1]**2*rho/(fxw[2:nI-1,1:nJ-1] * coeffsUV[1:nI-2,1:nJ-1,4] + (1 - fxw[2:nI-1,1:nJ-1])*coeffsUV[2:nI-1,1:nJ-1,4])
+    coeffsPp[1,1:nJ-1,1] = 0
+
+    coeffsPp[1:nI-1,1:nJ-2,2] = dx_CV[1:nI-1,1:nJ-2]**2*rho/(fyn[1:nI-1,1:nJ-2] * coeffsUV[1:nI-1,2:nJ-1,4] + (1 - fyn[1:nI-1,1:nJ-2])*coeffsUV[1:nI-1,1:nJ-2,4])
+    coeffsPp[1:nI-1,nJ-2,2] = 0
+
+    coeffsPp[1:nI-1,2:nJ-1,3] = dx_CV[1:nI-1,2:nJ-1]**2*rho/(fys[1:nI-1,2:nJ-1] * coeffsUV[1:nI-1,1:nJ-2,4] + (1 - fys[1:nI-1,2:nJ-1])*coeffsUV[1:nI-1,2:nJ-1,4])
+    coeffsPp[1:nI-1,1,3] = 0
+    
     sourcePp = Fw - Fe + Fs - Fn
-    # sourcePp[1,1] = pow(10,30) * 0.0
     Spp = np.zeros([nI,nJ])
-    # Spp[1,1] = -pow(10,30)
     coeffsPp[:,:,4] = coeffsPp[:,:,0] + coeffsPp[:,:,1] + coeffsPp[:,:,2] + coeffsPp[:,:,3] - Spp[:,:]
+
+
     # Solve for pressure correction (Note that more that one loop is used)
     Pp[:,:] = 0
     for iter_gs in range(n_inner_iterations_gs_p):
@@ -350,78 +273,36 @@ for iter in range(nIterations):
                 Pp[i,j] = 1/coeffsPp[i,j,4]*(coeffsPp[i,j,0]*Pp[i+1,j] + coeffsPp[i,j,1]*Pp[i-1,j] + coeffsPp[i,j,2]*Pp[i,j+1] + coeffsPp[i,j,3]*Pp[i,j-1] + sourcePp[i,j])
 
         
-        i = nI-1
-        for j in range(0,nJ):
-            Pp[i,j] = Pp[i-1,j]
-        
-        i = 0
-        for j in range(0,nJ):
-            Pp[i,j] = Pp[i+1,j]
-            
-        j = nJ-1
-        for i in range(0,nI):
-            Pp[i,j] = Pp[i,j-1]
-            
-        j = 0
-        for i in range(0,nI):
-            Pp[i,j] = Pp[i,j+1]
+        Pp[nI-1,0:nJ] = Pp[nI-2,0:nJ]
+        Pp[0,0:nJ] = Pp[1,0:nJ]
+        Pp[0:nI,nJ-1] = Pp[0:nI,nJ-2]
+        Pp[0:nI,0] = Pp[0:nI,1]
             
     # Set Pp with reference to node (2,2) and copy to boundaries
     Pp = Pp - Pp[1,1]
     
     # Correct velocities, pressure and mass flows
-    
     P += alphaP*Pp
     
-    # for i in range(1,nI-1):
-    #     for j in range(1,nJ-1):
-    #         pGradE[i,j] = (P[i+1,j] - P[i,j])/dxe_N[i,j]
-    #         pGradW[i,j] = (P[i,j] - P[i-1,j])/dxw_N[i,j]
-    #         pGradN[i,j] = (P[i,j+1] - P[i,j])/dyn_N[i,j]
-    #         pGradS[i,j] = (P[i,j] - P[i,j-1])/dys_N[i,j]
-            
-    i = nI-2
-    for j in range(1,nJ-1):
-        P[i+1,j] =  P[i,j] + pGradE[i-1,j]*dxe_N[i,j]
+    P[nI-1,1:nJ-1] = P[nI-2,1:nJ-1] + pGradE[nI-3,1:nJ-1]*dxe_N[nI-2,1:nJ-1]
+    P[0,nJ-1] = P[1,nJ-1] + pGradW[2,nJ-1]*dxw_N[1,nJ-1]
+    P[1:nI-1,nJ-1] = P[1:nI-1,nJ-2] + pGradN[1:nI-1,nJ-3]*dyn_N[1:nI-1,nJ-2]
+    P[1:nI-1,0] = P[1:nI-1,1] + pGradN[1:nI-1,2]*dys_N[1:nI-1,1] 
         
-    i = 1
-    for j in range(1,nJ-1):
-        P[i-1,j] = P[i,j] + pGradW[i+1,j]*dxw_N[i,j]
-        
-    j = nJ-2
-    for i in range(1,nI-1):
-        P[i,j+1] = P[i,j] + pGradN[i,j-1]*dyn_N[i,j]
-    
-    j = 1
-    for i in range(1,nI-1):
-        P[i,j-1] = P[i,j] + pGradN[i,j+1]*dys_N[i,j] 
-        
-        
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):         
-            U[i,j] -= 0.5*(Pp[i+1,j] - Pp[i-1,j]) * dy_CV[i,j] / coeffsUV[i,j,4]
-            V[i,j] -= 0.5*(Pp[i,j+1] - Pp[i,j-1]) * dy_CV[i,j] / coeffsUV[i,j,4]
-            
-    # for i in range(1,nI-1):
-    #     for j in range(1,nJ-1):         
-    #         U[i,j] -= (fxe[i,j]*Pp[i+1,j] - fxw[i,j]*Pp[i-1,j] + (fxw[i,j] - fxe[i,j])*Pp[i,j]) * dy_CV[i,j] / coeffsUV[i,j,4]
-    #         V[i,j] -= (fyn[i,j]*Pp[i,j+1] - fys[i,j]*Pp[i,j-1] + (fys[i,j] - fyn[i,j])*Pp[i,j]) * dy_CV[i,j] / coeffsUV[i,j,4]
+    U[1:nI-1,1:nJ-1] -= 0.5*(Pp[2:nI,1:nJ-1] - Pp[0:nI-2,1:nJ-1]) * dy_CV[1:nI-1,1:nJ-1] / coeffsUV[1:nI-1,1:nJ-1,4]
+    V[1:nI-1,1:nJ-1] -= 0.5*(Pp[1:nI-1,2:nJ] - Pp[1:nI-1,0:nJ-2]) * dy_CV[1:nI-1,1:nJ-1] / coeffsUV[1:nI-1,1:nJ-1,4]
+
     [Fe,Fw,Fn,Fs] = rhieChow(U,V,P,dx_CV,dy_CV,fxe,fxw,fyn,fys,coeffsUV,nI,nJ)
     
-    # impose zero mass flow at the boundaries
-
-    # Copy P to boundaries
     
     # Compute residuals
     residuals_U.append(0) # U momentum residual
     residuals_V.append(0) # V momentum residual
     residuals_c.append(0) # continuity residual
 
-    for i in range(1,nI-1):
-        for j in range(1,nJ-1):
-            residuals_U[-1] = np.abs(coeffsUV[i,j,4]*U[i,j] - (coeffsUV[i,j,0]*U[i+1,j] + coeffsUV[i,j,1]*U[i-1,j] + coeffsUV[i,j,2]*U[i,j+1] + coeffsUV[i,j,3]*U[i,j-1] + sourceUV[i,j,0]))
-            residuals_V[-1] = np.abs(coeffsUV[i,j,4]*V[i,j] - (coeffsUV[i,j,0]*V[i+1,j] + coeffsUV[i,j,1]*V[i-1,j] + coeffsUV[i,j,2]*V[i,j+1] + coeffsUV[i,j,3]*V[i,j-1] + sourceUV[i,j,1]))
-            residuals_c[-1] = np.abs(Fw[i,j] - Fe[i,j] + Fs[i,j] - Fn[i,j])
+    residuals_U[-1] = np.linalg.norm(coeffsUV[1:nI-1,1:nJ-1,4]*U[1:nI-1,1:nJ-1] - (coeffsUV[1:nI-1,1:nJ-1,0]*U[2:nI,1:nJ-1] + coeffsUV[1:nI-1,1:nJ-1,1]*U[0:nI-2,1:nJ-1] + coeffsUV[1:nI-1,1:nJ-1,2]*U[1:nI-1,2:nJ] + coeffsUV[1:nI-1,1:nJ-1,3]*U[1:nI-1,0:nJ-2] + sourceUV[1:nI-1,1:nJ-1,0]),1)
+    residuals_V[-1] = np.linalg.norm(coeffsUV[1:nI-1,1:nJ-1,4]*V[1:nI-1,1:nJ-1] - (coeffsUV[1:nI-1,1:nJ-1,0]*V[2:nI,1:nJ-1] + coeffsUV[1:nI-1,1:nJ-1,1]*V[0:nI-2,1:nJ-1] + coeffsUV[1:nI-1,1:nJ-1,2]*V[1:nI-1,2:nJ] + coeffsUV[1:nI-1,1:nJ-1,3]*V[1:nI-1,0:nJ-2] + sourceUV[1:nI-1,1:nJ-1,1]),1)
+    residuals_c[-1] = np.linalg.norm(Fw[1:nI-1,1:nJ-1] - Fe[1:nI-1,1:nJ-1] + Fs[1:nI-1,1:nJ-1] - Fn[1:nI-1,1:nJ-1],1)
 
     print('iteration: %d\nresU = %.5e, resV = %.5e, resCon = %.5e\n\n'\
         % (iter, residuals_U[-1], residuals_V[-1], residuals_c[-1]))
@@ -430,7 +311,8 @@ for iter in range(nIterations):
     if resTolerance>max([residuals_U[-1], residuals_V[-1], residuals_c[-1]]):
         break
 
-# Plotting section (these are some examples, more plots might be needed)
+
+# ============== Plotting =================
 
 #Velocity Vector normalization for plotting
 for i in range(1,nI-1):
@@ -532,5 +414,6 @@ plt.legend()
 plt.title('Residuals')
 plt.yscale('log')
 
-plt.show()
+#plt.show()
+plt.close()
 
