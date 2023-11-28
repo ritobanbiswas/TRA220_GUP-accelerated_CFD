@@ -64,8 +64,8 @@ data_file = open ('data_FOU_CD.txt')# data file where the given solution is stor
 
 # Geometric inputs (fixed so that a fair comparison can be made)
 
-mI = 1001 # number of mesh points X direction. 
-mJ = 1001 # number of mesh points Y direction. 
+mI = 21 # number of mesh points X direction. 
+mJ = 21 # number of mesh points Y direction. 
 xL =  1 # length in X direction
 yL =  1 # length in Y direction
 
